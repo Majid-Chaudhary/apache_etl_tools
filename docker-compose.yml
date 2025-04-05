@@ -37,15 +37,16 @@ services:
 
   airflow-init:
     image: apache/airflow:2.7.3
+    container_name: airflow_init
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:Delta_12345678@postgres:5432/airflow
     entrypoint: >
-      /bin/bash -c "
-        airflow db init &&
-        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com
+      bash -c "
+      airflow db init &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com
       "
     volumes:
       - ./dags:/opt/airflow/dags
@@ -56,6 +57,7 @@ services:
 
   airflow-webserver:
     image: apache/airflow:2.7.3
+    container_name: airflow_webserver
     depends_on:
       postgres:
         condition: service_healthy
@@ -81,8 +83,8 @@ services:
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
     command: >
       bash -c "
-        pip install psycopg2-binary cx_Oracle airflow-hop-plugin-custom &&
-        airflow webserver
+      pip install psycopg2-binary cx_Oracle airflow-hop-plugin-custom dbt-postgres &&
+      airflow webserver
       "
     volumes:
       - ./dags:/opt/airflow/dags
@@ -98,6 +100,7 @@ services:
 
   airflow-scheduler:
     image: apache/airflow:2.7.3
+    container_name: airflow_scheduler
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,7 +114,11 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://postgres:Delta_12345678@postgres:5432/airflow
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
-    command: scheduler
+    command: >
+      bash -c "
+      pip install dbt-postgres &&
+      airflow scheduler
+      "
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
@@ -121,6 +128,7 @@ services:
 
   airflow-worker:
     image: apache/airflow:2.7.3
+    container_name: airflow_worker
     depends_on:
       postgres:
         condition: service_healthy
@@ -133,7 +141,11 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:Delta_12345678@postgres:5432/airflow
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://postgres:Delta_12345678@postgres:5432/airflow
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
-    command: celery worker
+    command: >
+      bash -c "
+      pip install dbt-postgres &&
+      celery worker
+      "
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
