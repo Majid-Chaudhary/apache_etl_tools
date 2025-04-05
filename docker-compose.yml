@@ -81,6 +81,7 @@ services:
       AIRFLOW__USERS__ADMIN_LASTNAME: User
       AIRFLOW__USERS__ADMIN_EMAIL: admin@example.com
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+      AIRFLOW__LOGGING__LOGGING_CONFIG_CLASS: ""
     command: >
       bash -c "
       pip install psycopg2-binary cx_Oracle airflow-hop-plugin-custom dbt-postgres &&
@@ -114,9 +115,10 @@ services:
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://postgres:Delta_12345678@postgres:5432/airflow
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
       AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+      AIRFLOW__LOGGING__LOGGING_CONFIG_CLASS: ""
     command: >
       bash -c "
-      pip install dbt-postgres &&
+      pip install psycopg2-binary apache-airflow-providers-postgres dbt-postgres &&
       airflow scheduler
       "
     volumes:
@@ -141,11 +143,13 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:Delta_12345678@postgres:5432/airflow
       AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://postgres:Delta_12345678@postgres:5432/airflow
       AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+      AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://postgres:Delta_12345678@postgres:5432/airflow
     command: >
       bash -c "
       pip install dbt-postgres &&
-      celery worker
+      celery --app airflow.executors.celery_executor worker
       "
+
     volumes:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
